@@ -18,7 +18,7 @@ function Navbar() {
     e.preventDefault();
     try {
       const { data } = await axios.get(
-        "http://localhost:3000/api/users/logout",
+        "https://inkspire-blog-app.onrender.com/api/users/logout",
         { withCredentials: true },
       );
       localStorage.removeItem("jwt");

@@ -9,7 +9,7 @@ function MyBlogs() {
     const fetchMyBlogs = async () => {
       try {
         const { data } = await axios.get(
-          "http://localhost:3000/api/blogs/myBlogs",
+          "https://inkspire-blog-app.onrender.com/api/blogs/myBlogs",
           { withCredentials: true }
         );
         console.log(data);
@@ -23,7 +23,7 @@ function MyBlogs() {
 
   const handleDelete = async (id) => {
     await axios
-      .delete(`http://localhost:3000/api/blogs/delete/${id}`, {
+        .delete(`https://inkspire-blog-app.onrender.com/api/blogs/delete/${id}`, {
         withCredentials: true,
       })
       .then((res) => {

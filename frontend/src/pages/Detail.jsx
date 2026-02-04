@@ -15,7 +15,7 @@ function Detail() {
     const fetchblogs = async () => {
       try {
         const { data } = await axios.get(
-          `http://localhost:3000/api/blogs/singleBlog/${id}`,
+          `https://inkspire-blog-app.onrender.com/api/blogs/singleBlog/${id}`,
           {
             withCredentials: true,
             headers: { "Content-Type": "application/json" },

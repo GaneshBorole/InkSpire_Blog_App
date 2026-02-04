@@ -61,7 +61,7 @@ function UpdateBlog() {
     formData.append("blogImage", blogImage);
     try {
       const { data } = await axios.put(
-        `http://localhost:3000/api/blogs/update/${id}`,
+        `https://inkspire-blog-app.onrender.com/api/blogs/update/${id}`,
         formData,
         {
           withCredentials: true,

@@ -16,7 +16,7 @@ export const AuthProvider = ({ children }) => {
         console.log(token);
         if (token) {
           const { data } = await axios.get(
-            "http://localhost:3000/api/users/myprofile",
+            "https://inkspire-blog-app.onrender.com/api/users/myprofile",
             {
               withCredentials: true,
               headers: {
@@ -36,7 +36,7 @@ export const AuthProvider = ({ children }) => {
     const fetchBlogs = async () => {
       try {
         const { data } = await axios.get(
-          "http://localhost:3000/api/blogs/allBlog",
+          "https://inkspire-blog-app.onrender.com/api/blogs/allBlog",
           { withCredentials: true }
         );
         console.log(data);

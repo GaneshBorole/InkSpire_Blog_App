@@ -41,7 +41,7 @@ function Register() {
     formData.append("photo", photo);
     try {
       const { data } = await axios.post(
-        "http://localhost:3000/api/users/register",
+        "https://inkspire-blog-app.onrender.com/api/users/register",
         formData,
         {
           headers: {
