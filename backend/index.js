@@ -1,43 +1,40 @@
 import express from "express";
-import dotenv from "dotenv"
+import dotenv from "dotenv";
 import mongoose from "mongoose";
 import cors from "cors";
-dotenv.config();
-const app = express();
-import userRoute from  "./routes/user.routes.js"
+import cookieParser from "cookie-parser";
 import fileUpload from "express-fileupload";
 import { v2 as cloudinary } from "cloudinary";
+
+import userRoute from "./routes/user.routes.js";
 import blogRoute from "./routes/blog.routes.js";
-import cookieparser from "cookie-parser";
-const port = process.env.PORT;
-const MONGO_URL=process.env.MONGO_URI;
+
+dotenv.config();
+
+const app = express();
+
+// 🔥 REQUIRED for Render / Railway / Heroku
+app.set("trust proxy", 1);
 
 // Middleware
 app.use(express.json());
-app.use(cookieparser());
+app.use(cookieParser());
 
-app.use(
-  cors({
-    origin: process.env.FRONTEND_URL,
-    methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
-    allowedHeaders: ["Origin","X-Requested-With","Content-Type", "Authorization"],
-    credentials: true, 
-    optionsSuccessStatus:200,
+app.use(cors({
+  origin: process.env.FRONTEND_URL, // NO trailing slash
+  credentials: true,
 }));
 
-app.use(
-  fileUpload({
-    useTempFiles: true,
-    tempFileDir: "/tmp/",
-  })
-);
-//DB connection
-try {
-    mongoose.connect(MONGO_URL);
-    console.log("MongoDB connected");   
-} catch (error) {
-    console.log(error);
-}
+app.use(fileUpload({
+  useTempFiles: true,
+  tempFileDir: "/tmp/",
+}));
+
+// DB connection
+mongoose.connect(process.env.MONGO_URI)
+  .then(() => console.log("MongoDB connected"))
+  .catch((err) => console.log(err));
+
 // Cloudinary
 cloudinary.config({
   cloud_name: process.env.CLOUD_NAME,
@@ -45,13 +42,16 @@ cloudinary.config({
   api_secret: process.env.CLOUD_SECRET_KEY,
 });
 
-//Routes define
-app.use("/api/users",userRoute);
-app.use("/api/blogs",blogRoute);
-app.get('/', (req, res) => {
-  res.send('Hello World!')
-})
+// Routes
+app.use("/api/users", userRoute);
+app.use("/api/blogs", blogRoute);
+
+app.get("/", (req, res) => {
+  res.send("Hello World!");
+});
+
+const port = process.env.PORT || 5000;
 
 app.listen(port, () => {
-  console.log(`App listening on port ${port}`)
-})
+  console.log(`App listening on port ${port}`);
+});
