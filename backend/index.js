@@ -28,8 +28,8 @@ app.use(cors({
 app.use(fileUpload({
   useTempFiles: true,
   tempFileDir: "/tmp/",
+  createParentPath: true,
 }));
-
 // DB connection
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log("MongoDB connected"))

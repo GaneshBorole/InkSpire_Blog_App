@@ -8,39 +8,47 @@ export const register = async (req, res) => {
     if (!req.files || Object.keys(req.files).length === 0) {
       return res.status(400).json({ message: "User photo is required" });
     }
+
     const { photo } = req.files;
+
     const allowedFormats = ["image/jpeg", "image/png", "image/webp"];
     if (!allowedFormats.includes(photo.mimetype)) {
       return res.status(400).json({
-        message: "Invalid photo format. Only jpg and png are allowed",
+        message: "Invalid photo format. Only jpg, png, webp allowed",
       });
     }
+
     const { email, name, password, phone, education, role } = req.body;
-    if (
-      !email ||
-      !name ||
-      !password ||
-      !phone ||
-      !education ||
-      !role ||
-      !photo
-    ) {
+
+    if (!email || !name || !password || !phone || !education || !role) {
       return res.status(400).json({ message: "Please fill required fields" });
     }
-    const user = await User.findOne({ email });
-    if (user) {
-      return res
-        .status(400)
-        .json({ message: "User already exists with this email" });
+
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({
+        message: "User already exists with this email",
+      });
     }
+
+    if (!photo.tempFilePath) {
+      return res.status(400).json({ message: "File upload failed" });
+    }
+
     const cloudinaryResponse = await cloudinary.uploader.upload(
-      photo.tempFilePath
+      photo.tempFilePath,
+      { folder: "users" }
     );
-    if (!cloudinaryResponse || cloudinaryResponse.error) {
-      console.log(cloudinaryResponse.error);
+
+    if (!cloudinaryResponse) {
+      return res.status(500).json({
+        message: "Cloudinary upload failed",
+      });
     }
+
     const hashedPassword = await bcrypt.hash(password, 10);
-    const newUser = new User({
+
+    const newUser = await User.create({
       email,
       name,
       password: hashedPassword,
@@ -49,30 +57,28 @@ export const register = async (req, res) => {
       role,
       photo: {
         public_id: cloudinaryResponse.public_id,
-        url: cloudinaryResponse.url,
+        url: cloudinaryResponse.secure_url,
       },
     });
-    await newUser.save();
-    if (newUser) {
-      let token = await createTokenAndSaveCookies(newUser._id, res);
-      console.log("Singup: ", token);
-      res.status(201).json({
-        message: "User registered successfully",
-        user: {
-          id: newUser._id,
-          name: newUser.name,
-          email: newUser.email,
-          role: newUser.role,
-          education: newUser.education,
-          avatar: newUser.avatar,
-          createdOn: newUser.createdOn,
-        },
-        token: token,
-      });
-    }
+
+    const token = await createTokenAndSaveCookies(newUser._id, res);
+
+    res.status(201).json({
+      message: "User registered successfully",
+      user: {
+        id: newUser._id,
+        name: newUser.name,
+        email: newUser.email,
+        role: newUser.role,
+        education: newUser.education,
+        photo: newUser.photo.url,
+      },
+      token,
+    });
+
   } catch (error) {
-    console.log(error);
-    return res.status(500).json({ error: "Internal Server error" });
+    console.error("REGISTER ERROR:", error);
+    return res.status(500).json({ message: error.message });
   }
 };
 
