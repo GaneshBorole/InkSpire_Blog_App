@@ -1,5 +1,5 @@
-import axios from "axios";
-import React, { useEffect, useState } from "react";
+import axios from "../api/axios";
+import React, { useState, useEffect } from "react";
 import toast from "react-hot-toast";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthProvider";
@@ -15,10 +15,8 @@ function Login() {
 
   // redirect if already logged in
   useEffect(() => {
-    if (isAuthenticated) {
-      navigateTo("/");
-    }
-  }, [isAuthenticated, navigateTo]);
+    if (isAuthenticated) navigateTo("/");
+  }, [isAuthenticated]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -30,24 +28,19 @@ function Login() {
     try {
       setLoading(true);
 
-      const { data } = await axios.post(
-        "/api/users/login",
-        { email, password, role }
-      );
+      const { data } = await axios.post("/api/users/login", {
+        email,
+        password,
+        role,
+      });
 
       toast.success(data.message || "Login successful");
 
-      // cookie handles auth automatically
       setProfile(data.user);
       setIsAuthenticated(true);
 
-      setEmail("");
-      setPassword("");
-      setRole("");
-
       navigateTo("/");
     } catch (error) {
-      console.error(error);
       toast.error(
         error.response?.data?.message || "Login failed"
       );
@@ -68,7 +61,6 @@ function Login() {
             Login
           </h1>
 
-          {/* Role */}
           <select
             value={role}
             onChange={(e) => setRole(e.target.value)}
@@ -79,34 +71,31 @@ function Login() {
             <option value="admin">Admin</option>
           </select>
 
-          {/* Email */}
           <input
             type="email"
-            placeholder="Your Email Address"
+            placeholder="Email"
+            className="w-full p-2 mb-4 border rounded-md"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full p-2 mb-4 border rounded-md"
           />
 
-          {/* Password */}
           <input
             type="password"
-            placeholder="Your Password"
+            placeholder="Password"
+            className="w-full p-2 mb-4 border rounded-md"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full p-2 mb-4 border rounded-md"
           />
 
           <p className="text-center mb-4">
-            New User?{" "}
+            New user?{" "}
             <Link to="/register" className="text-blue-600">
-              Register Now
+              Register
             </Link>
           </p>
 
           <button
             disabled={loading}
-            type="submit"
             className="w-full p-2 bg-blue-500 hover:bg-blue-800 rounded-md text-white"
           >
             {loading ? "Logging in..." : "Login"}

@@ -38,10 +38,12 @@ app.use(express.json({ limit: "10mb" }));
 app.use(cookieParser());
 
 // ✅ CORS (supports Vercel frontend)
-app.use(cors({
-  origin: true,
-  credentials: true,
-}));
+app.use(
+  cors({
+    origin: true,   // allows Vercel preview + production
+    credentials: true,
+  })
+);
 
 // ✅ File Upload (Render compatible)
 app.use(
