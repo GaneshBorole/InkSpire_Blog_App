@@ -5,73 +5,78 @@ import { useParams } from "react-router-dom";
 
 function Detail() {
   const { id } = useParams();
-  const [blogs, setblogs] = useState(null);
+  const [blog, setBlog] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  const fetchBlog = async () => {
+    try {
+      const { data } = await axios.get(`/api/blogs/${id}`);
+      setBlog(data);
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to load blog");
+      setBlog(null);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    if (!id) return;
-
-    setblogs(null); // 🔥 reset old blog
-
-    const fetchblogs = async () => {
-      try {
-        const { data } = await axios.get(
-          `https://inkspire-blog-app.onrender.com/api/blogs/singleBlog/${id}`,
-          {
-            withCredentials: true,
-            headers: { "Content-Type": "application/json" },
-          }
-        );
-
-        setblogs(data.blog ?? data);
-      } catch (error) {
-        console.log(error);
-        toast.error("Failed to load blog");
-      }
-    };
-
-    fetchblogs();
+    if (id) fetchBlog();
   }, [id]);
 
-  if (!blogs) {
+  if (loading) {
     return (
-      <div className="flex h-screen items-center justify-center">
+      <div className="flex h-screen items-center justify-center text-gray-600">
         Loading blog...
       </div>
     );
   }
 
+  if (!blog) {
+    return (
+      <div className="flex h-screen items-center justify-center text-red-500">
+        Blog not found.
+      </div>
+    );
+  }
+
+  const image = blog?.blogImage?.url || "/imgPL.webp";
+  const authorPhoto = blog?.adminPhoto || "/imgPL.webp";
+
   return (
-    <section className="container mx-auto p-4">
-      <div className="text-blue-500 uppercase text-xs font-bold mb-4">
-        {blogs.category}
+    <section className="container mx-auto px-4 py-10 max-w-5xl">
+      {/* Category */}
+      <p className="text-blue-600 uppercase text-xs font-bold mb-3 tracking-wide">
+        {blog.category}
+      </p>
+
+      {/* Title */}
+      <h1 className="text-3xl md:text-4xl font-bold mb-6 leading-tight">
+        {blog.title}
+      </h1>
+
+      {/* Author */}
+      <div className="flex items-center mb-8">
+        <img
+          src={authorPhoto}
+          alt={blog.adminName}
+          className="w-12 h-12 rounded-full mr-4 object-cover"
+        />
+        <p className="text-lg font-semibold">{blog.adminName}</p>
       </div>
 
-      <h1 className="text-4xl font-bold mb-6">{blogs.title}</h1>
+      {/* Blog Image */}
+      <img
+        src={image}
+        alt={blog.title}
+        className="w-full max-h-105 object-cover rounded-lg shadow-md mb-8"
+      />
 
-      <div className="flex items-center mb-6">
-        {blogs.adminPhoto && (
-          <img
-            src={blogs.adminPhoto}
-            alt="author"
-            className="w-12 h-12 rounded-full mr-4"
-          />
-        )}
-        <p className="text-lg font-semibold">{blogs.adminName}</p>
-      </div>
-
-      <div className="flex flex-col md:flex-row">
-        {blogs?.blogImage?.url && (
-          <img
-            src={blogs.blogImage.url}
-            alt="blog"
-            className="md:w-95 w-full h-100 mb-6 rounded-lg shadow-lg border"
-          />
-        )}
-
-        <div className="md:w-1/2 w-full md:pl-6">
-          <p className="text-lg mb-6">{blogs.about}</p>
-        </div>
-      </div>
+      {/* Blog Content */}
+      <article className="text-lg leading-relaxed text-gray-700 whitespace-pre-line">
+        {blog.about}
+      </article>
     </section>
   );
 }

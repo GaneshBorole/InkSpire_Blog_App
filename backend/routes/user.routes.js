@@ -1,13 +1,25 @@
-import express from 'express';
-import { register } from '../controllers/user.controller.js';
-import { login } from '../controllers/user.controller.js';
-import { logout,getMyProfile,getAdmins } from '../controllers/user.controller.js';
-import { isAuthenticated } from '../middleware/authUser.js';
+import express from "express";
+import {
+  register,
+  login,
+  logout,
+  getMyProfile,
+  getAdmins,
+} from "../controllers/user.controller.js";
 
-const router=express.Router();
-router.post("/register",register)
-router.post("/login",login);
-router.get("/logout",logout);
-router.get("/myprofile",isAuthenticated,getMyProfile);
-router.get("/admins",getAdmins);
+import { isAuthenticated, isAdmin } from "../middleware/authUser.js";
+
+const router = express.Router();
+
+// 🔓 Public routes
+router.post("/register", register);
+router.post("/login", login);
+
+// 🔐 Auth routes
+router.post("/logout", isAuthenticated, logout);
+router.get("/me", isAuthenticated, getMyProfile);
+
+// 🔐 Admin only
+router.get("/admins", isAuthenticated, isAdmin("admin"), getAdmins);
+
 export default router;

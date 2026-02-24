@@ -3,61 +3,60 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 
 export const AuthContext = createContext();
 
+// ✅ set global axios settings
+axios.defaults.withCredentials = true;
+axios.defaults.baseURL = "https://inkspire-blog-app.onrender.com";
+
 export const AuthProvider = ({ children }) => {
-  const [blogs, setBlogs] = useState();
-  const [profile, setProfile] = useState();
+  const [blogs, setBlogs] = useState([]);
+  const [profile, setProfile] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  // 🔐 Fetch logged-in user
+  const fetchProfile = async () => {
+    try {
+      const { data } = await axios.get("/api/users/me");
+
+      setProfile(data.user);
+      setIsAuthenticated(true);
+    } catch (error) {
+      setProfile(null);
+      setIsAuthenticated(false);
+    }
+  };
+
+  // 📝 Fetch blogs
+  const fetchBlogs = async () => {
+    try {
+      const { data } = await axios.get("/api/blogs");
+      setBlogs(data);
+    } catch (error) {
+      console.error("Failed to load blogs");
+    }
+  };
 
   useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        // token should be let type variable because its value will change in every login. (in backend also)
-        let token = localStorage.getItem("jwt"); // Retrieve the token directly from the localStorage (Go to login.jsx)
-        console.log(token);
-        if (token) {
-          const { data } = await axios.get(
-            "https://inkspire-blog-app.onrender.com/api/users/myprofile",
-            {
-              withCredentials: true,
-              headers: {
-                "Content-Type": "application/json",
-              },
-            }
-          );
-          console.log(data.user);
-          setProfile(data.user);
-          setIsAuthenticated(true);
-        }
-      } catch (error) {
-        console.log(error);
-      }
+    const loadData = async () => {
+      await Promise.all([fetchProfile(), fetchBlogs()]);
+      setLoading(false);
     };
 
-    const fetchBlogs = async () => {
-      try {
-        const { data } = await axios.get(
-          "https://inkspire-blog-app.onrender.com/api/blogs/allBlog",
-          { withCredentials: true }
-        );
-        console.log(data);
-        setBlogs(data);
-      } catch (error) {
-        console.log(error);
-      }
-    };
-
-    fetchBlogs();
-    fetchProfile();
+    loadData();
   }, []);
 
   return (
     <AuthContext.Provider
       value={{
         blogs,
+        setBlogs,
         profile,
         setProfile,
         isAuthenticated,
         setIsAuthenticated,
+        loading,
+        fetchProfile,
+        fetchBlogs,
       }}
     >
       {children}

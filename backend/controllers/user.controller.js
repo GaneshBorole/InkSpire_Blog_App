@@ -5,7 +5,7 @@ import createTokenAndSaveCookies from "../jwt/AuthToken.js";
 
 export const register = async (req, res) => {
   try {
-    if (!req.files || Object.keys(req.files).length === 0) {
+    if (!req.files || !req.files.photo) {
       return res.status(400).json({ message: "User photo is required" });
     }
 
@@ -14,7 +14,7 @@ export const register = async (req, res) => {
     const allowedFormats = ["image/jpeg", "image/png", "image/webp"];
     if (!allowedFormats.includes(photo.mimetype)) {
       return res.status(400).json({
-        message: "Invalid photo format. Only jpg, png, webp allowed",
+        message: "Only JPG, PNG, WEBP images are allowed",
       });
     }
 
@@ -24,10 +24,25 @@ export const register = async (req, res) => {
       return res.status(400).json({ message: "Please fill required fields" });
     }
 
-    const existingUser = await User.findOne({ email });
+    if (password.length < 8) {
+      return res.status(400).json({
+        message: "Password must be at least 8 characters",
+      });
+    }
+
+    const normalizedEmail = email.trim().toLowerCase();
+
+    const existingUser = await User.findOne({ email: normalizedEmail });
     if (existingUser) {
       return res.status(400).json({
         message: "User already exists with this email",
+      });
+    }
+
+    const phoneExists = await User.findOne({ phone });
+    if (phoneExists) {
+      return res.status(400).json({
+        message: "Phone number already registered",
       });
     }
 
@@ -35,29 +50,28 @@ export const register = async (req, res) => {
       return res.status(400).json({ message: "File upload failed" });
     }
 
-    const cloudinaryResponse = await cloudinary.uploader.upload(
-      photo.tempFilePath,
-      { folder: "users" }
-    );
+    const upload = await cloudinary.uploader.upload(photo.tempFilePath, {
+      folder: "users",
+    });
 
-    if (!cloudinaryResponse) {
+    if (!upload) {
       return res.status(500).json({
-        message: "Cloudinary upload failed",
+        message: "Photo upload failed",
       });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const newUser = await User.create({
-      email,
-      name,
+      email: normalizedEmail,
+      name: name.trim(),
       password: hashedPassword,
       phone,
       education,
       role,
       photo: {
-        public_id: cloudinaryResponse.public_id,
-        url: cloudinaryResponse.secure_url,
+        public_id: upload.public_id,
+        url: upload.secure_url,
       },
     });
 
@@ -78,62 +92,81 @@ export const register = async (req, res) => {
 
   } catch (error) {
     console.error("REGISTER ERROR:", error);
-    return res.status(500).json({ message: error.message });
+    res.status(500).json({ message: error.message });
   }
 };
 
 export const login = async (req, res) => {
-  const { email, password, role } = req.body;
   try {
+    const { email, password, role } = req.body;
+
     if (!email || !password || !role) {
       return res.status(400).json({ message: "Please fill required fields" });
     }
+
     const user = await User.findOne({ email }).select("+password");
-    console.log(user);
-    if (!user.password) {
-      return res.status(400).json({ message: "User password is missing" });
+
+    if (!user) {
+      return res.status(400).json({ message: "Invalid email or password" });
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
-    if (!user || !isMatch) {
+
+    if (!isMatch) {
       return res.status(400).json({ message: "Invalid email or password" });
     }
+
     if (user.role !== role) {
-      return res.status(400).json({ message: `Given role ${role} not found` });
+      return res.status(400).json({ message: `Role ${role} not found` });
     }
-    let token = await createTokenAndSaveCookies(user._id, res);
-    console.log("Login: ", token);
+
+    const token = await createTokenAndSaveCookies(user._id, res);
+
     res.status(200).json({
       message: "User logged in successfully",
       user: {
-        _id: user._id,
+        id: user._id,
         name: user.name,
         email: user.email,
         role: user.role,
       },
-      token: token,
+      token,
     });
+
   } catch (error) {
-    console.log(error);
-    return res.status(500).json({ error: "Internal Server error" });
+    console.error("LOGIN ERROR:", error);
+    res.status(500).json({ message: error.message });
   }
 };
 
 export const logout = (req, res) => {
   try {
-    res.clearCookie("jwt");
+    res.clearCookie("jwt", {
+      httpOnly: true,
+      secure: true,
+      sameSite: "none",
+    });
+
     res.status(200).json({ message: "User logged out successfully" });
   } catch (error) {
-    console.log(error);
-    return res.status(500).json({ error: "Internal Server error" });
+    console.error(error);
+    res.status(500).json({ message: "Logout failed" });
   }
 };
 
 export const getMyProfile = async (req, res) => {
-  const user = await req.user;
-  res.status(200).json({ user });
+  try {
+    res.status(200).json({ user: req.user });
+  } catch (error) {
+    res.status(500).json({ message: "Failed to fetch profile" });
+  }
 };
+
 export const getAdmins = async (req, res) => {
-  const admins = await User.find({ role: "admin" });
-  res.status(200).json({ admins });
+  try {
+    const admins = await User.find({ role: "admin" });
+    res.status(200).json({ admins });
+  } catch (error) {
+    res.status(500).json({ message: "Failed to fetch admins" });
+  }
 };

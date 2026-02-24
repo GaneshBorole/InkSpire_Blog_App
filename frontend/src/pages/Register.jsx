@@ -2,9 +2,11 @@ import axios from "axios";
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
+import { useAuth } from "../context/AuthProvider";
 
 function Register() {
   const navigateTo = useNavigate();
+  const { setIsAuthenticated, setProfile } = useAuth();
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -14,12 +16,21 @@ function Register() {
   const [education, setEducation] = useState("");
   const [photo, setPhoto] = useState(null);
   const [photoPreview, setPhotoPreview] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  // handle photo change
   const changePhotoHandler = (e) => {
     const file = e.target.files[0];
-
     if (!file) return;
+
+    // validate type
+    if (!file.type.startsWith("image/")) {
+      return toast.error("Please upload a valid image");
+    }
+
+    // validate size (max 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      return toast.error("Image must be less than 2MB");
+    }
 
     setPhoto(file);
     setPhotoPreview(URL.createObjectURL(file));
@@ -28,9 +39,12 @@ function Register() {
   const handleRegister = async (e) => {
     e.preventDefault();
 
+    if (!name || !email || !password || !role || !education) {
+      return toast.error("Please fill all required fields");
+    }
+
     if (!photo) {
-      toast.error("Please upload photo");
-      return;
+      return toast.error("Please upload a profile photo");
     }
 
     const formData = new FormData();
@@ -43,38 +57,35 @@ function Register() {
     formData.append("photo", photo);
 
     try {
+      setLoading(true);
+
       const { data } = await axios.post(
-        "https://inkspire-blog-app.onrender.com/api/users/register",
-        formData,
-        { withCredentials: true }
+        "/api/users/register",
+        formData
       );
 
-      toast.success(data.message || "User registered successfully");
+      toast.success(data.message || "Registration successful");
 
-      // reset form
-      setName("");
-      setEmail("");
-      setPhone("");
-      setPassword("");
-      setRole("");
-      setEducation("");
-      setPhoto(null);
-      setPhotoPreview("");
+      // auto login after register
+      setProfile(data.user);
+      setIsAuthenticated(true);
 
       navigateTo("/");
     } catch (error) {
-      console.log(error);
+      console.error(error);
       toast.error(
         error.response?.data?.message || "Registration failed"
       );
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-200">
-      <div className="w-full max-w-md bg-white shadow-md rounded-lg p-10">
+    <div className="min-h-screen flex items-center justify-center bg-gray-200 px-4">
+      <div className="w-full max-w-md bg-white shadow-md rounded-lg p-8">
         <form onSubmit={handleRegister}>
-          <div className="font-semibold text-xl text-center">
+          <div className="text-xl text-center font-semibold mb-2">
             Ink<span className="text-blue-500">Spire</span>
           </div>
 
@@ -82,6 +93,7 @@ function Register() {
             Register
           </h1>
 
+          {/* Role */}
           <select
             value={role}
             onChange={(e) => setRole(e.target.value)}
@@ -93,6 +105,7 @@ function Register() {
             <option value="admin">Admin</option>
           </select>
 
+          {/* Name */}
           <input
             type="text"
             placeholder="Your Name"
@@ -103,6 +116,7 @@ function Register() {
             autoComplete="name"
           />
 
+          {/* Email */}
           <input
             type="email"
             placeholder="Your Email Address"
@@ -113,6 +127,7 @@ function Register() {
             autoComplete="email"
           />
 
+          {/* Phone */}
           <input
             type="tel"
             placeholder="Your Phone Number"
@@ -122,6 +137,7 @@ function Register() {
             autoComplete="tel"
           />
 
+          {/* Password */}
           <input
             type="password"
             placeholder="Your Password"
@@ -132,6 +148,7 @@ function Register() {
             autoComplete="new-password"
           />
 
+          {/* Education */}
           <select
             value={education}
             onChange={(e) => setEducation(e.target.value)}
@@ -145,21 +162,16 @@ function Register() {
             <option value="BE">BE / B.Tech</option>
           </select>
 
+          {/* Photo */}
           <div className="flex items-center mb-4">
-            <div className="w-20 h-20 mr-4">
-              <img
-                src={
-                  photoPreview ||
-                  "https://via.placeholder.com/80"
-                }
-                alt="preview"
-                className="w-20 h-20 object-cover rounded"
-              />
-            </div>
+            <img
+              src={photoPreview || "https://via.placeholder.com/80"}
+              alt="preview"
+              className="w-20 h-20 object-cover rounded mr-4"
+            />
 
             <input
               type="file"
-              name="photo"
               accept="image/*"
               onChange={changePhotoHandler}
               className="w-full p-2 border rounded-md"
@@ -175,10 +187,10 @@ function Register() {
           </p>
 
           <button
-            type="submit"
-            className="w-full p-2 bg-blue-500 hover:bg-blue-800 duration-300 rounded-md text-white"
+            disabled={loading}
+            className="w-full p-2 bg-blue-500 hover:bg-blue-800 rounded-md text-white"
           >
-            Register
+            {loading ? "Registering..." : "Register"}
           </button>
         </form>
       </div>
