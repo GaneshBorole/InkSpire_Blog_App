@@ -14,12 +14,12 @@ const createTokenAndSaveCookies = async (userId, res) => {
 
   // 🍪 cookie settings for production (Render + Vercel)
   res.cookie("jwt", token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production", 
-    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-    maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
-    path: "/",
-  });
+  httpOnly: true,
+  secure: true,
+  sameSite: "none",
+  maxAge: 30 * 24 * 60 * 60 * 1000,
+  path: "/",
+});
 
   // OPTIONAL: store token (not required for JWT auth)
   // await User.findByIdAndUpdate(userId, { token });
