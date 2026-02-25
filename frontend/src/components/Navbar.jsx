@@ -14,20 +14,24 @@ function Navbar() {
   const { profile, isAuthenticated, setIsAuthenticated, setProfile } = useAuth();
   const navigateTo = useNavigate();
 
-  const handleLogout = async () => {
-    try {
-      const { data } = await axios.get("/api/users/logout");
+const handleLogout = async () => {
+  try {
+    const { data } = await axios.post(
+      "/api/users/logout",
+      {},
+      { withCredentials: true }
+    );
 
-      toast.success(data.message);
+    toast.success(data.message);
 
-      setProfile(null);
-      setIsAuthenticated(false);
+    setProfile(null);
+    setIsAuthenticated(false);
 
-      navigateTo("/login");
-    } catch (error) {
-      toast.error("Logout failed");
-    }
-  };
+    navigateTo("/login");
+  } catch (error) {
+    toast.error("Logout failed");
+  }
+};
 
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {

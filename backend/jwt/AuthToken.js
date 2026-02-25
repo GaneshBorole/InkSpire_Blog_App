@@ -6,14 +6,15 @@ const createTokenAndSaveCookies = async (userId, res) => {
     expiresIn: "30d",
   });
 
-  res.cookie("jwt", token, {
-    httpOnly: true,
-    secure: true,          // REQUIRED for HTTPS
-    sameSite: "none",      // REQUIRED for cross-domain
-    path: "/",
-    maxAge: 30 * 24 * 60 * 60 * 1000,
-  });
+ const isProduction = process.env.NODE_ENV === "production";
 
+res.cookie("jwt", token, {
+  httpOnly: true,
+  secure: isProduction,
+  sameSite: isProduction ? "none" : "lax",
+  path: "/",
+  maxAge: 30 * 24 * 60 * 60 * 1000,
+});
   await User.findByIdAndUpdate(userId, { token });
 
   return token;

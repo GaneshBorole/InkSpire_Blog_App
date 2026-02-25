@@ -24,7 +24,11 @@ function Sidebar({ setComponent }) {
   const handleLogout = async (e) => {
     e.preventDefault();
     try {
-      const { data } = await axios.post("/api/users/logout");
+      const { data } = await axios.post(
+  "https://inkspire-blog-app.onrender.com/api/users/logout",
+  {},
+  { withCredentials: true }
+);
 
       toast.success(data.message || "Logged out successfully");
 

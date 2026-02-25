@@ -1,12 +1,10 @@
-import axios from "axios";
+import axios from "../api/axios";
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
-import { useAuth } from "../context/AuthProvider";
 
 function Register() {
   const navigateTo = useNavigate();
-  const { setIsAuthenticated, setProfile } = useAuth();
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -22,14 +20,14 @@ function Register() {
     const file = e.target.files[0];
     if (!file) return;
 
-    // validate type
+    // validate file type
     if (!file.type.startsWith("image/")) {
       return toast.error("Please upload a valid image");
     }
 
-    // validate size (max 2MB)
+    // validate size (2MB)
     if (file.size > 2 * 1024 * 1024) {
-      return toast.error("Image must be less than 2MB");
+      return toast.error("Image must be under 2MB");
     }
 
     setPhoto(file);
@@ -47,32 +45,41 @@ function Register() {
       return toast.error("Please upload a profile photo");
     }
 
-    const formData = new FormData();
-    formData.append("name", name);
-    formData.append("email", email);
-    formData.append("phone", phone);
-    formData.append("password", password);
-    formData.append("role", role);
-    formData.append("education", education);
-    formData.append("photo", photo);
-
     try {
       setLoading(true);
+
+      const formData = new FormData();
+      formData.append("name", name);
+      formData.append("email", email);
+      formData.append("phone", phone);
+      formData.append("password", password);
+      formData.append("role", role);
+      formData.append("education", education);
+      formData.append("photo", photo);
 
       const { data } = await axios.post(
         "/api/users/register",
         formData
       );
 
-      toast.success(data.message || "Registration successful");
+      toast.success(
+        data.message || "Registration successful! Please login."
+      );
 
-      // auto login after register
-      setProfile(data.user);
-      setIsAuthenticated(true);
+      // clear form
+      setName("");
+      setEmail("");
+      setPhone("");
+      setPassword("");
+      setRole("");
+      setEducation("");
+      setPhoto(null);
+      setPhotoPreview("");
 
-      navigateTo("/");
+      // redirect to login
+      navigateTo("/login");
+
     } catch (error) {
-      console.error(error);
       toast.error(
         error.response?.data?.message || "Registration failed"
       );
@@ -98,7 +105,6 @@ function Register() {
             value={role}
             onChange={(e) => setRole(e.target.value)}
             className="w-full p-2 mb-4 border rounded-md"
-            required
           >
             <option value="">Select Role</option>
             <option value="user">User</option>
@@ -109,43 +115,36 @@ function Register() {
           <input
             type="text"
             placeholder="Your Name"
+            className="w-full p-2 mb-4 border rounded-md"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="w-full p-2 mb-4 border rounded-md"
-            required
-            autoComplete="name"
           />
 
           {/* Email */}
           <input
             type="email"
-            placeholder="Your Email Address"
+            placeholder="Email"
+            className="w-full p-2 mb-4 border rounded-md"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full p-2 mb-4 border rounded-md"
-            required
-            autoComplete="email"
           />
 
           {/* Phone */}
           <input
             type="tel"
-            placeholder="Your Phone Number"
+            placeholder="Phone Number"
+            className="w-full p-2 mb-4 border rounded-md"
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
-            className="w-full p-2 mb-4 border rounded-md"
-            autoComplete="tel"
           />
 
           {/* Password */}
           <input
             type="password"
-            placeholder="Your Password"
+            placeholder="Password"
+            className="w-full p-2 mb-4 border rounded-md"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full p-2 mb-4 border rounded-md"
-            required
-            autoComplete="new-password"
           />
 
           {/* Education */}
@@ -153,36 +152,33 @@ function Register() {
             value={education}
             onChange={(e) => setEducation(e.target.value)}
             className="w-full p-2 mb-4 border rounded-md"
-            required
           >
-            <option value="">Select Your Education</option>
+            <option value="">Select Education</option>
             <option value="BCA">BCA</option>
             <option value="MCA">MCA</option>
             <option value="MBA">MBA</option>
             <option value="BE">BE / B.Tech</option>
           </select>
 
-          {/* Photo */}
+          {/* Photo Upload */}
           <div className="flex items-center mb-4">
             <img
-              src={photoPreview || "https://via.placeholder.com/80"}
+              src={photoPreview || "/imgPL.webp"}
               alt="preview"
               className="w-20 h-20 object-cover rounded mr-4"
             />
-
             <input
               type="file"
               accept="image/*"
               onChange={changePhotoHandler}
               className="w-full p-2 border rounded-md"
-              required
             />
           </div>
 
           <p className="text-center mb-4">
             Already registered?{" "}
             <Link to="/login" className="text-blue-600">
-              Login Now
+              Login
             </Link>
           </p>
 
